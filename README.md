@@ -1,1 +1,1 @@
-# Udacity Project - Mars
+# Udacity Project - Racer

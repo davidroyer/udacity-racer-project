@@ -70,7 +70,6 @@ async function delay(ms) {
   try {
     return await new Promise(resolve => setTimeout(resolve, ms));
   } catch (error) {
-    console.log("an error shouldn't be possible here");
     console.log(error);
   }
 }
@@ -83,7 +82,6 @@ async function handleCreateRace() {
 
   // Invoke the API call to create the race, then save the result
   const newRace = await createRace(player_id, track_id);
-  console.log('🚀 ~ file: index.js ~ line 86 ~ handleCreateRace ~ newRace', newRace);
 
   // Update the store with the race id
   store = {
@@ -95,17 +93,9 @@ async function handleCreateRace() {
   renderAt('#race', renderRaceStartView(newRace.Track, newRace.Cars));
 
   const countdownResult = await runCountdown();
-  console.log(
-    '🚀 ~ file: index.js ~ line 97 ~ handleCreateRace ~ countdownResult',
-    countdownResult
-  );
 
   // Call the async function startRace
   const newRaceStarted = await startRace(store.race_id - 1);
-  console.log(
-    '🚀 ~ file: index.js ~ line 102 ~ handleCreateRace ~ newRaceStarted',
-    newRaceStarted
-  );
 
   // Call the async function runRace
   runRace(store.race_id - 1);
@@ -117,10 +107,6 @@ function runRace(raceID) {
     // every 500ms
     let raceInterval = setInterval(async () => {
       let currentRace = await getRace(raceID);
-      console.log(
-        '🚀 ~ file: index.js ~ line 120 ~ setInterval ~ currentRace',
-        currentRace
-      );
 
       if (!stopInterval && currentRace.status === 'in-progress') {
         renderAt('#leaderBoard', raceProgress(currentRace.positions));
@@ -130,31 +116,16 @@ function runRace(raceID) {
         resolve(currentRace); // resolve the promise
       }
     }, 500);
-
-    /*
-		TODO - if the race info status property is "in-progress", update the leaderboard by calling:
-	*/
-    /*
-		TODO - if the race info status property is "finished", run the following:
-
-		clearInterval(raceInterval) // to stop the interval from repeating
-		renderAt('#race', resultsView(res.positions)) // to render the results view
-		resolve(res) // resolve the promise
-	*/
   });
-  // remember to add error handling for the Promise
 }
 
 async function runCountdown() {
-  console.log('Running runCountdown...');
-
   try {
     // wait for the DOM to load
     await delay(1000);
     let timer = 3;
 
     return new Promise(resolve => {
-
       countdownInterval = setInterval(() => {
         if (timer === 0) {
           clearInterval(countdownInterval);
@@ -165,8 +136,6 @@ async function runCountdown() {
           document.getElementById('big-numbers').innerHTML = --timer;
         }
       }, 1000);
-
-
     });
   } catch (error) {
     console.log(error);
@@ -174,8 +143,6 @@ async function runCountdown() {
 }
 
 function handleSelectTrack(target) {
-  console.log('selected a track', target.id);
-
   // remove class selected from all track options
   const selected = document.querySelector('#tracks .selected');
   if (selected) {
@@ -193,8 +160,6 @@ function handleSelectTrack(target) {
 }
 
 function handleSelectPodRacer(target) {
-  console.log('selected a pod', target.id);
-
   // remove class selected from all racer options
   const selected = document.querySelector('#racers .selected');
   if (selected) {
@@ -205,7 +170,6 @@ function handleSelectPodRacer(target) {
   target.classList.add('selected');
 
   // Save the selected racer to the store
-
   store = {
     ...store,
     player_id: parseInt(target.id)
@@ -213,7 +177,6 @@ function handleSelectPodRacer(target) {
 }
 
 function handleAccelerate() {
-  console.log('accelerate button clicked');
   // Invoke the API call to accelerate
   accelerate(store.race_id - 1);
 }
@@ -334,9 +297,8 @@ function resultsView(positions) {
 }
 
 function raceProgress(positions) {
-  console.log('🚀 ~ file: index.js ~ line 341 ~ raceProgress ~ positions', positions);
-
   let userPlayer = positions.find(e => e.id === store.player_id);
+
   if (!userPlayer) {
     clearInterval(countdownInterval);
     clearInterval(raceInterval);
@@ -351,7 +313,6 @@ function raceProgress(positions) {
 
   const results = () =>
     positions.map(p => {
-      console.log('🚀 ~ file: index.js ~ line 331 ~ raceProgress ~ p', p);
       return `
 			<tr>
 				<td>
@@ -375,7 +336,6 @@ function renderAt(element, html) {
   const node = document.querySelector(element);
   node.innerHTML = html;
 }
-
 
 // API CALLS ------------------------------------------------
 
@@ -404,7 +364,7 @@ async function getRacers() {
     const data = await response.json();
     return data;
   } catch (error) {
-    console.log('Problem with getRacers request ->', error)
+    console.log('Problem with getRacers request ->', error);
   }
 }
 
@@ -428,10 +388,9 @@ async function getRace(id) {
     const response = await fetch(`${SERVER}/api/races/${id}`);
     return await response.json();
   } catch (error) {
-    console.log('Problem with getRace request ->', error)
+    console.log('Problem with getRace request ->', error);
   }
 }
-
 
 async function startRace(id) {
   try {
@@ -442,7 +401,7 @@ async function startRace(id) {
 
     return await response.json;
   } catch (error) {
-    console.log('Problem with startRace request ->', error)
+    console.log('Problem with startRace request ->', error);
   }
 }
 
