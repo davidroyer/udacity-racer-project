@@ -1,7 +1,7 @@
 // PROVIDED CODE BELOW (LINES 1 - 80) DO NOT REMOVE
-var stopInterval = false;
+
 // The store will hold all information needed globally
-var store = {
+let store = {
   track_id: undefined,
   player_id: undefined,
   race_id: undefined
@@ -38,6 +38,9 @@ function setupClickHandlers() {
     'click',
     function (event) {
       const { target } = event;
+      const { parentElement } = target;
+
+      if (parentElement.matches('.card')) target.parentElement.click();
 
       // Race track form field
       if (target.matches('.card.track')) {
@@ -66,6 +69,7 @@ function setupClickHandlers() {
   );
 }
 
+
 async function delay(ms) {
   try {
     return await new Promise(resolve => setTimeout(resolve, ms));
@@ -75,18 +79,28 @@ async function delay(ms) {
 }
 // ^ PROVIDED CODE ^ DO NOT REMOVE
 
+function notifyUserAndRetry(message) {
+  alert(`
+The following error occured: "${message}."
+
+Once you close this box you'll automatically be returned to the home page where you can try again to start a race.
+`);
+  return (window.location = '/');
+}
+
 // This async function controls the flow of the race, add the logic and error handling
 async function handleCreateRace() {
   // Get player_id and track_id from the store
   const { player_id, track_id } = store;
-
+  if (!player_id || !track_id)
+    return alert('You need to select both a racer and a track.');
   // Invoke the API call to create the race, then save the result
   const newRace = await createRace(player_id, track_id);
 
   // Update the store with the race id
   store = {
     ...store,
-    race_id: newRace.ID
+    race_id: newRace.ID - 1
   };
 
   // render starting UI
@@ -95,10 +109,12 @@ async function handleCreateRace() {
   const countdownResult = await runCountdown();
 
   // Call the async function startRace
-  const newRaceStarted = await startRace(store.race_id - 1);
+  const startedRace = await startRace(store.race_id);
+
+  if (startedRace.error) notifyUserAndRetry(startedRace.message);
 
   // Call the async function runRace
-  runRace(store.race_id - 1);
+  runRace(store.race_id);
 }
 
 function runRace(raceID) {
@@ -108,7 +124,7 @@ function runRace(raceID) {
     let raceInterval = setInterval(async () => {
       let currentRace = await getRace(raceID);
 
-      if (!stopInterval && currentRace.status === 'in-progress') {
+      if (currentRace.status === 'in-progress') {
         renderAt('#leaderBoard', raceProgress(currentRace.positions));
       } else {
         clearInterval(raceInterval);
@@ -116,7 +132,7 @@ function runRace(raceID) {
         resolve(currentRace); // resolve the promise
       }
     }, 500);
-  });
+  }).catch(error => console.log('Problem with runRace function ->', error))
 }
 
 async function runCountdown() {
@@ -178,7 +194,7 @@ function handleSelectPodRacer(target) {
 
 function handleAccelerate() {
   // Invoke the API call to accelerate
-  accelerate(store.race_id - 1);
+  accelerate(store.race_id);
 }
 
 // HTML VIEWS ------------------------------------------------
@@ -250,7 +266,7 @@ function renderTrackCard(track) {
 
   return `
 		<li id="${id}" class="card track">
-			<h3>${name}</h3>
+			<h3 class="track-name">${name}</h3>
 		</li>
 	`;
 }
@@ -380,7 +396,7 @@ function createRace(player_id, track_id) {
     body: JSON.stringify(body)
   })
     .then(res => res.json())
-    .catch(err => console.log('Problem with createRace request ->', err));
+    .catch(error => console.log('Problem with createRace request ->', error));
 }
 
 async function getRace(id) {
@@ -394,19 +410,18 @@ async function getRace(id) {
 
 async function startRace(id) {
   try {
-    const response = await fetch(`${SERVER}/api/races/${id}/start`, {
+    return await fetch(`${SERVER}/api/races/${id}/start`, {
       method: 'POST',
       ...defaultFetchOpts()
     });
-
-    return await response.json;
   } catch (error) {
     console.log('Problem with startRace request ->', error);
+    return { error: true, message: error };
   }
 }
 
 function accelerate(id) {
   return fetch(`${SERVER}/api/races/${id}/accelerate`, {
     method: 'POST'
-  });
+  }).catch(error => console.log('Problem with accelerate request ->', error));
 }
